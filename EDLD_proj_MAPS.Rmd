@@ -1,0 +1,285 @@
+---
+title: "EDLD_proj_MAPS"
+author: "Kavya Mudiam"
+date: "2/13/2021"
+output: html_document
+---
+
+```{r}
+library(rio)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(colorblindr)
+library(lubridate)
+install.packages("plotly")
+library(plotly)
+```
+
+```{r}
+here::here()
+df <- import("data/df_times_021321_wide.csv")
+df_l <- import("data/df_times_021321.csv")
+str(df)
+
+names(df)
+df <- df %>% 
+  mutate(participant_id = factor(participant_id),
+         device_id = factor(device_id),
+         TimePoint = factor(TimePoint),
+         TimeWith = factor(TimeWith)) 
+    # rename("Sad" = `sad`, "Stressed" = `stressed`, "Anxious" = `anxious`, "Supported" = `supported`, "Happy" = `happy`, "Angry" = `angry`, "Scared" = `scared`, "Calm" =  `calm`, "Confident" = `confident`, "Lonely" = `lonely`, "Rejected" = `rejected`, "Included" = `included`)
+
+str(df_l)
+df_l <- df_l %>% 
+  mutate(participant_id = factor(participant_id),
+         device_id = factor(device_id),
+         TimePoint = factor(TimePoint),
+         question_id = factor(question_id),
+         string_answer = factor(string_answer))
+```
+
+#cut offs for MFQ, SCARED
+https://jrcalabrese.github.io/clinical_cutoff.html
+
+*5 item SCARED cutoffs*
+*https://www.sciencedirect.com/science/article/pii/S0890856709632378?via%3Dihub
+> Based on the sensitivity and specificity of the 5-item scale, a cutoff of 3 can be used for discriminating anxiety from nonanxiety
+
+*MFQ cut offs*
+*no 
+
+```{r}
+df <- df %>% 
+  mutate(scared_sev = if_else(scared>3, 1, 0),
+         scared_sev = factor(scared_sev),
+         mfq_sev = if_else(mfq > 8, 1, 0),
+         mfq_sev = factor(mfq_sev))
+
+df_l <- df_l %>% 
+    mutate(scared_sev = if_else(scared>3, 1, 0),
+         scared_sev = factor(scared_sev),
+         mfq_sev = if_else(mfq > 8, 1, 0),
+         mfq_sev = factor(mfq_sev))
+
+hist(df$scared)
+hist(df$mfq)
+df %>% 
+  ggplot(aes(mfq_sev)) +
+  geom_bar(aes(y = stat(count)))
+
+
+
+```
+
+#just visualizing the data sort of generally 
+```{r}
+df_l <- df_l %>% 
+  group_by(question_id) %>% 
+  mutate(mean_response = mean(int_answer, na.rm = T))
+
+ggplot(df_l, aes(question_id, int_answer))+
+  geom_bar(stat = "summary", fill = "pink") +
+  labs(title = "Self-reported mood scores averaged across all timepoints",
+       x= "Mood",
+       y= "Severity") +
+  expand_limits(y = c(0,100))
+
+#only include a few of the questions
+df_l %>% 
+  filter(question_id == c("happy", "sad", "stressed", "anxious", "supported")) %>% 
+  ggplot(aes(x= question_id, int_answer))+
+  geom_bar(stat = "summary", fill = "pink")+
+  labs(title = "Self-reported mood scores averaged across all timepoints",
+       x= "Mood",
+       y= "Severity") +
+  expand_limits(y = c(0,100))
+
+#tried a scatterplot for fun - EW, NOT FUN
+ggplot(df_l, aes(x = TimePoint, y = int_answer, 
+                 shape = question_id)) +
+  geom_point()
+
+range(df$anxious, na.rm = T)
+
+summary(df)
+```
+
+9.3 Bubble charts -- https://rkabacoff.github.io/datavis/Other.html#Bubble
+#Bubble charts, TimeWith x Mood
+```{r}
+df_bub <- df %>% 
+  select(participant_id, TimeWith, scared_sev, happy, sad, stressed, anxious, supported) %>% 
+  pivot_longer(cols = c(happy, sad, stressed, anxious, supported),
+               values_drop_na = T) %>% 
+  mutate(name = factor(name),
+         name = fct_relevel(name, c("sad", "stressed", "anxious", "supported", "happy"))) %>%
+  filter(TimeWith != "")
+
+
+df_bub <- df_bub %>% 
+  group_by(TimeWith, name) %>% 
+  mutate(mean = mean(value, na.rm = T)) #can I include this all within the ggplot function?
+
+# df_bub_mean <- df_bub %>%
+#   dplyr::select(TimeWith, name, mean) %>%
+#   group_by(TimeWith, name) %>%
+#   unique()
+  
+summary(df_bub$TimeWith)
+
+ggplot(df_bub, 
+       aes(x = TimeWith, y = name, size = mean)) +
+  geom_point(aes(fill = name,
+                 color = name),
+             shape = 21) + #, show.legend = F) +
+    scale_fill_OkabeIto() +
+    scale_color_OkabeIto() +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank()) +
+  scale_size_continuous(range = c(1, 25)) +
+  geom_text(aes(label = round(mean,0)), size = 4) +
+  labs(title = "Severity of Emotion After Spending Time Alone or With Certain People",
+       x = "Time Spent With",
+       y = " ") +
+  scale_x_discrete(labels = c('Alone','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
+  scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
+```
+#Bubble Plot, Alone v Together x Mood
+```{r}
+df_bub <- df_bub %>% 
+  mutate(with = ifelse(TimeWith != "alone", "Not Alone", "Alone")) %>% 
+  group_by(name, with) %>% 
+  mutate(mean_with = mean(value, na.rm = T),
+         with = factor(with),
+         )
+
+ggplot(df_bub, 
+       aes(x = with, y = name, size = mean_with)) +
+  geom_point(aes(fill = name,
+                 color = name),
+             shape = 21) + 
+    scale_fill_OkabeIto() +
+    scale_color_OkabeIto() +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank()) +
+  scale_size_continuous(range = c(1, 25)) +
+  geom_text(aes(label = round(mean_with,0)), size = 4) +
+  labs(title = "Severity of Emotion After Spending Time Alone or Not Alone",
+       x = "",
+       y = "") +
+    scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
+
+```
+
+#Bubble plots with baseline anxiety
+```{r}
+df_bub <- df_bub %>% 
+  group_by(name, TimeWith, scared_sev) %>% 
+  mutate(mean_scared = mean(value, na.rm = T))
+
+ggplot(df_bub, 
+       aes(x = TimeWith, y = name, size = mean_scared)) +
+  geom_point(aes(fill = name,
+                 color = name),
+             shape = 21) +
+  facet_wrap(~scared_sev) #NEED TO DROP NA VALUE!!!!!! 
+
+ggplot(df_bub, 
+       aes(x = TimeWith, y = name, size = mean_scared)) +
+  geom_point(aes(fill = name,
+                 color = name),
+             shape = 21) + 
+  facet_wrap(~scared_sev, nrow = 1, ncol= 2, drop = T) +
+    scale_fill_OkabeIto() +
+    scale_color_OkabeIto() +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank()) +
+  scale_size_continuous(range = c(1, 25)) +
+  geom_text(aes(label = round(mean_scared,0)), size = 4) +
+  labs(title = "Severity of Emotion After Spending Time Alone or With Certain People",
+       x = "Time Spent With",
+       y = " ") +
+  scale_x_discrete(labels = c('Alone','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
+  scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
+
+df_bub %>% 
+  group_by(scared_sev) %>% 
+  count()
+
+# df_bub %>% 
+#   count(scared_sev) #gives me a different count value than above
+```
+
+#Lineplot with time x sadness depending on baseline ____
+
+```{r}
+df %>% 
+select(TimePoint) %>% 
+mutate(TimePoint = as.integer(TimePoint)) %>% 
+  range()
+
+df_line <- df %>% 
+  group_by(TimePoint, scared_sev) %>% 
+  mutate(mean_sad = mean(sad, na.rm = T)) %>% 
+  filter(scared_sev != "")
+df_line <- df %>% 
+  group_by(TimePoint, mfq_sev) %>% 
+  mutate(mean_sad_mfq = mean(sad, na.rm = T)) %>% 
+  drop_na(mfq_sev)
+
+df_line %>% 
+  group_by(scared_sev) %>% 
+  count()
+df_line %>% 
+  group_by(TimePoint) %>% 
+  count()
+
+df_line %>% 
+  group_by(mfq_sev) %>% 
+  summary()
+
+df_line %>% 
+  group_by(mfq_sev,TimePoint) %>% 
+  count() #After a certain point, there's only one data point for later timepoints. Should I stop once n gets below 5?
+
+
+ggplot(df_line, mapping = aes(as.numeric(TimePoint), mean_sad)) +
+  geom_line(aes(color = scared_sev)) +
+  geom_point(shape=21, aes(color=scared_sev, fill = scared_sev), size=2) +
+  labs(x = "Time Point",
+       y = "Sadness Severity") +
+  scale_color_OkabeIto() +
+  annotate("text", label = "No Baseline Anxiety", x = 28, y = 50, color = "orange") +
+  annotate("text", label = "Baseline Anxiety", x = 42, y = 40, color = "turquoise") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank())
+
+
+sad_by_dep <- ggplot(df_line, mapping = aes(as.numeric(TimePoint), mean_sad_mfq)) +
+  geom_line(aes(color = mfq_sev)) +
+  geom_point(shape=21, aes(color=mfq_sev, fill = mfq_sev), size=2) +
+  labs(x = "Time Point",
+       y = "Sadness Severity",
+       title = "Average Severity of Sadness Between Depressed and Non-Depressed Adolescents Over Time") +
+  scale_color_OkabeIto() +
+  annotate("text", label = "Not Depressed at Baseline", x = 36.5, y = 12, color = "orange") +
+  annotate("text", label = "Depressed at Baseline", x = 44, y = 45, color = "turquoise") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        #panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank()) + 
+  scale_x_continuous(breaks = seq(0, 60, by = 10))
+
+ggplotly(sad_by_dep)
+  
+```
+
