@@ -4,10 +4,18 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
+    source_code: https://github.com/kmudiam/EDLD_proj_MAPS.git
 ---
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
+library(rio)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(colorblindr)
+library(lubridate)
+library(plotly)
 ```
 
 Column {data-width=650}
@@ -16,7 +24,76 @@ Column {data-width=650}
 ### Chart A
 
 ```{r}
+here::here()
+df <- import("data/df_times_021321_wide.csv")
+df_l <- import("data/df_times_021321.csv")
 
+df <- df %>% 
+  mutate(participant_id = factor(participant_id),
+         device_id = factor(device_id),
+         TimePoint = factor(TimePoint),
+         TimeWith = factor(TimeWith)) 
+    # rename("Sad" = `sad`, "Stressed" = `stressed`, "Anxious" = `anxious`, "Supported" = `supported`, "Happy" = `happy`, "Angry" = `angry`, "Scared" = `scared`, "Calm" =  `calm`, "Confident" = `confident`, "Lonely" = `lonely`, "Rejected" = `rejected`, "Included" = `included`)
+
+df_l <- df_l %>% 
+  mutate(participant_id = factor(participant_id),
+         device_id = factor(device_id),
+         TimePoint = factor(TimePoint),
+         question_id = factor(question_id),
+         string_answer = factor(string_answer))
+
+df <- df %>% 
+  mutate(scared_sev = if_else(scared>3, 1, 0),
+         scared_sev = factor(scared_sev),
+         mfq_sev = if_else(mfq > 8, 1, 0),
+         mfq_sev = factor(mfq_sev))
+
+df_l <- df_l %>% 
+    mutate(scared_sev = if_else(scared>3, 1, 0),
+         scared_sev = factor(scared_sev),
+         mfq_sev = if_else(mfq > 8, 1, 0),
+         mfq_sev = factor(mfq_sev))
+
+# df %>% 
+#   ggplot(aes(mfq_sev)) +
+#   geom_bar(aes(y = stat(count)))
+
+df_bub <- df %>% 
+  select(participant_id, TimeWith, scared_sev, happy, sad, stressed, anxious, supported) %>% 
+  pivot_longer(cols = c(happy, sad, stressed, anxious, supported),
+               values_drop_na = T) %>% 
+  mutate(name = factor(name),
+         name = fct_relevel(name, c("sad", "stressed", "anxious", "supported", "happy"))) %>%
+  filter(TimeWith != "")
+
+
+df_bub <- df_bub %>% 
+  group_by(TimeWith, name) %>% 
+  mutate(mean = mean(value, na.rm = T)) #can I include this all within the ggplot function?
+
+# df_bub_mean <- df_bub %>%
+#   dplyr::select(TimeWith, name, mean) %>%
+#   group_by(TimeWith, name) %>%
+#   unique()
+
+ggplot(df_bub, 
+       aes(x = TimeWith, y = name, size = mean)) +
+  geom_point(aes(fill = name,
+                 color = name),
+             shape = 21) + #, show.legend = F) +
+    scale_fill_OkabeIto() +
+    scale_color_OkabeIto() +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank()) +
+  scale_size_continuous(range = c(1, 25)) +
+  geom_text(aes(label = round(mean,0)), size = 4) +
+  labs(title = "Severity of Emotion After Spending Time Alone or With Certain People",
+       x = "Time Spent With",
+       y = " ") +
+  scale_x_discrete(labels = c('Alone','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
+  scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
 ```
 
 Column {data-width=350}
