@@ -180,31 +180,39 @@ ggplot(df_bub,
 ```{r}
 df_bub <- df_bub %>% 
   group_by(name, TimeWith, scared_sev) %>% 
-  mutate(mean_scared = mean(value, na.rm = T))
+  mutate(mean_scared = mean(value, na.rm = T)) %>% 
+  drop_na(scared_sev)
 
-ggplot(df_bub, 
-       aes(x = TimeWith, y = name, size = mean_scared)) +
-  geom_point(aes(fill = name,
-                 color = name),
-             shape = 21) +
-  facet_wrap(~scared_sev) #NEED TO DROP NA VALUE!!!!!! 
+
+# ggplot(df_bub, 
+#        aes(x = TimeWith, y = name, size = mean_scared)) +
+#   geom_point(aes(fill = name,
+#                  color = name),
+#              shape = 21) +
+#   facet_wrap(~scared_sev) #NEED TO DROP NA VALUE!!!!!! 
+
+anxsev.labs <- c("No Anxiety at Baseline", "Anxiety at Baseline")
+names(anxsev.labs) <- c("0", "1")
+
 
 ggplot(df_bub, 
        aes(x = TimeWith, y = name, size = mean_scared)) +
   geom_point(aes(fill = name,
                  color = name),
              shape = 21) + 
-  facet_wrap(~scared_sev, nrow = 1, ncol= 2, drop = T) +
+  facet_wrap(~scared_sev,
+             labeller = labeller(scared_sev = anxsev.labs)) +
     scale_fill_OkabeIto() +
     scale_color_OkabeIto() +
   theme_minimal() +
   theme(legend.position = "none",
         panel.grid.major.x = element_blank(),
-        panel.grid.major.y = element_blank()) +
+        panel.grid.major.y = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   scale_size_continuous(range = c(1, 25)) +
   geom_text(aes(label = round(mean_scared,0)), size = 4) +
-  labs(title = "Severity of Emotion After Spending Time Alone or With Certain People",
-       x = "Time Spent With",
+  labs(title = "Severity of Emotion AMong Anxious and Non-Anxious Individuals After Spending Time Alone or With Certain People",
+       x = "",
        y = " ") +
   scale_x_discrete(labels = c('Alone','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
   scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))

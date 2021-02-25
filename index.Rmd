@@ -1,9 +1,9 @@
 ---
-title: "flex dashboard"
+title: "Data Visualization - Mood Among Adolescents Depending on Types of Interpersonal Interactions"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
     vertical_layout: fill
+    horizontal_layout: fill
     source_code: https://github.com/kmudiam/EDLD_proj_MAPS.git
 ---
 
@@ -18,8 +18,8 @@ library(lubridate)
 library(plotly)
 ```
 
-Column {data-width=650}
------------------------------------------------------------------------
+Page 1 {data-orientation=rows}
+===============================
 
 ### Chart A
 
@@ -86,7 +86,8 @@ ggplot(df_bub,
   theme_minimal() +
   theme(legend.position = "none",
         panel.grid.major.x = element_blank(),
-        panel.grid.major.y = element_blank()) +
+        panel.grid.major.y = element_blank(),
+        plot.title = element_text(size=10, hjust=0)) +
   scale_size_continuous(range = c(1, 25)) +
   geom_text(aes(label = round(mean,0)), size = 4) +
   labs(title = "Severity of Emotion After Spending Time Alone or With Certain People",
@@ -96,18 +97,81 @@ ggplot(df_bub,
   scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
 ```
 
-Column {data-width=350}
------------------------------------------------------------------------
-
 ### Chart B
 
 ```{r}
+df_bub <- df_bub %>% 
+  group_by(name, TimeWith, scared_sev) %>% 
+  mutate(mean_scared = mean(value, na.rm = T)) %>% 
+  drop_na(scared_sev)
 
+anxsev.labs <- c("No Anxiety at Baseline", "Anxiety at Baseline")
+names(anxsev.labs) <- c("0", "1")
+
+
+ggplot(df_bub, 
+       aes(x = TimeWith, y = name, size = mean_scared)) +
+  geom_point(aes(fill = name,
+                 color = name),
+             shape = 21) + 
+  facet_wrap(~scared_sev,
+             labeller = labeller(scared_sev = anxsev.labs)) +
+    scale_fill_OkabeIto() +
+    scale_color_OkabeIto() +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        plot.title = element_text(size=10, hjust=1)) +
+  scale_size_continuous(range = c(1, 15)) +
+  geom_text(aes(label = round(mean_scared,0)), size = 4) +
+  labs(title = "Severity of Emotion Among Anxious and Non-Anxious Individuals After Spending Time Alone or With Certain People",
+       x = "",
+       y = "") +
+  scale_x_discrete(labels = c('Alone','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
+  scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
 ```
+
+Page 2 {data-orientation=columns}
+===============================
 
 ### Chart C
 
 ```{r}
+# df %>% 
+# select(TimePoint) %>% 
+# mutate(TimePoint = as.integer(TimePoint)) %>% 
+#   range()
 
+df_line <- df %>% 
+  group_by(TimePoint, mfq_sev) %>% 
+  mutate(mean_sad_mfq = mean(sad, na.rm = T)) %>% 
+  drop_na(mfq_sev)
+
+
+# df_line %>% 
+#   group_by(mfq_sev,TimePoint) %>% 
+#   count() #After a certain point, there's only one data point for later timepoints. Should I stop once n gets below 5?
+# 
+
+
+
+sad_by_dep <- ggplot(df_line, mapping = aes(as.numeric(TimePoint), mean_sad_mfq)) +
+  geom_line(aes(color = mfq_sev)) +
+  geom_point(shape=21, aes(color=mfq_sev, fill = mfq_sev), size=2) +
+  labs(x = "Time Point",
+       y = "Sadness Severity",
+       title = "Average Severity of Sadness Between Depressed and Non-Depressed Adolescents Over Time") +
+  scale_color_OkabeIto() +
+  annotate("text", label = "Not Depressed at Baseline", x = 36.5, y = 12, color = "orange") +
+  annotate("text", label = "Depressed at Baseline", x = 44, y = 45, color = "turquoise") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        #panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank()) + 
+  scale_x_continuous(breaks = seq(0, 60, by = 10))
+
+ggplotly(sad_by_dep)
 ```
 
