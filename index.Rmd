@@ -24,7 +24,7 @@ Column {data-width=650}
 ### Chart A
 
 ```{r}
-here::here()
+#here::here()
 df <- import("data/df_times_021321_wide.csv")
 df_l <- import("data/df_times_021321.csv")
 
