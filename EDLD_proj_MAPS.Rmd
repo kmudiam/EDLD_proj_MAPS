@@ -68,6 +68,7 @@ df %>%
   ggplot(aes(mfq_sev)) +
   geom_bar(aes(y = stat(count)))
 
+#So cool to see how this started and how you transformed the data to reflect the MFQ in a way that could be communicated easily to the public. I think you could just go ahead and drop the NAs immediately here so you don't have to deal with them anymore with drop_na()
 
 
 ```
@@ -87,19 +88,20 @@ ggplot(df_l, aes(question_id, int_answer))+
 
 #only include a few of the questions
 df_l %>% 
-  filter(question_id == c("happy", "sad", "stressed", "anxious", "supported")) %>% 
+  filter(question_id == c("happy", "sad", "stressed", "anxious", "supported")) %>% #there is a problem with this filter - try using the in function: filter(question_id %in% c("happy", "sad", "stressed", "anxious", "supported"))
   ggplot(aes(x= question_id, int_answer))+
   geom_bar(stat = "summary", fill = "pink")+
   labs(title = "Self-reported mood scores averaged across all timepoints",
        x= "Mood",
        y= "Severity") +
   expand_limits(y = c(0,100))
+#I am getting an error when I run this code.. See above for my notes on the filter.
 
 #tried a scatterplot for fun - EW, NOT FUN
 ggplot(df_l, aes(x = TimePoint, y = int_answer, 
                  shape = question_id)) +
   geom_point()
-
+# Haha, I agree! Not fun! You really cleaned and summarized these data up into something you can actually interpret. Nice job!
 range(df$anxious, na.rm = T)
 
 summary(df)
@@ -172,8 +174,9 @@ ggplot(df_bub,
   labs(title = "Severity of Emotion After Spending Time Alone or Not Alone",
        x = "",
        y = "") +
-    scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
+    scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy")) # You might consider making the text along the axes a little bigger.
 
+#If you wanted to do something other than bubble charts (since you use that below as well), you could also do an annotated bar chart that was faceted by alone vs. not alone. But I think this is very effective!
 ```
 
 #Bubble plots with baseline anxiety
@@ -202,6 +205,7 @@ ggplot(df_bub,
              shape = 21) + 
   facet_wrap(~scared_sev,
              labeller = labeller(scared_sev = anxsev.labs)) +
+  #you might want to consider changing the facet so that the plots are above one another, right now this seems like a lot of cognitive load with them being displayed this way. You can specify within facet_wrap(nrow= _)
     scale_fill_OkabeIto() +
     scale_color_OkabeIto() +
   theme_minimal() +
@@ -216,13 +220,16 @@ ggplot(df_bub,
        y = " ") +
   scale_x_discrete(labels = c('Alone','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
   scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
-
+#This is really cool! What a neat way to divide the data and see some really interesting relationships regarding how anxiety might impact our experiences with being around other people vs. alone.
 df_bub %>% 
   group_by(scared_sev) %>% 
   count()
 
 # df_bub %>% 
 #   count(scared_sev) #gives me a different count value than above
+
+#I think that's because you need to assign the above grouping code to a new dataset. Right now, this grouping feature isn't applied to anything, it is only for your own knowledge when you ask it to gather this information.
+
 ```
 
 #Lineplot with time x sadness depending on baseline ____
@@ -270,7 +277,7 @@ ggplot(df_line, mapping = aes(as.numeric(TimePoint), mean_sad)) +
   theme(legend.position = "none",
         panel.grid.major.x = element_blank(),
         panel.grid.major.y = element_blank())
-
+#With this plot, it looks like I am getting errors every time I try the next plot. I think you have rewritten over the same dataset many times. It might be best if you create a new dataset for each plot (e.g., rather than have "df_line" for every plot, try renaming it something else).
 
 sad_by_dep <- ggplot(df_line, mapping = aes(as.numeric(TimePoint), mean_sad_mfq)) +
   geom_line(aes(color = mfq_sev)) +
@@ -279,15 +286,18 @@ sad_by_dep <- ggplot(df_line, mapping = aes(as.numeric(TimePoint), mean_sad_mfq)
        y = "Sadness Severity",
        title = "Average Severity of Sadness Between Depressed and Non-Depressed Adolescents Over Time") +
   scale_color_OkabeIto() +
-  annotate("text", label = "Not Depressed at Baseline", x = 36.5, y = 12, color = "orange") +
-  annotate("text", label = "Depressed at Baseline", x = 44, y = 45, color = "turquoise") +
+  annotate("text", label = "Not Depressed at Baseline", x = 36.5, y = 12, color = "orange") + #I love these color choices!
+  annotate("text", label = "Depressed at Baseline", x = 44, y = 45, color = "turquoise") + # for this annotation, I would use the color package that allows you to match the colors exactly to the line you are referring to. You also might want to use the nudge() feature so that your annotations are not crowding over the line.
   theme_minimal() +
   theme(legend.position = "none",
-        #panel.grid.major.x = element_blank(),
+        #panel.grid.major.x = element_blank(), 
         panel.grid.major.y = element_blank()) + 
   scale_x_continuous(breaks = seq(0, 60, by = 10))
 
 ggplotly(sad_by_dep)
+
+#I think you could be more descriptive with your axes... Right now I am not sure what "time point" is referring to, especially because there appear to me more than 50. Could you map this out with fewer points to reduce the clutter? For example, a point for every 2 weeks rather than a point for every day (if that's what it is?)
+# I like the minimal theme, but you might benefit from including a clear x axis.
   
 ```
 
