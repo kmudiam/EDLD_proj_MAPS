@@ -2,6 +2,9 @@
 .Rhistory
 .Rapp.history
 
+#EDLD_proj
+EDLD_proj_MAPS.Rmd
+
 # Session Data files
 .RData
 
