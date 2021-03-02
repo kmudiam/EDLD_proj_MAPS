@@ -5,6 +5,8 @@ output:
     vertical_layout: fill
     horizontal_layout: fill
     source_code: https://github.com/kmudiam/EDLD_proj_MAPS.git
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -34,6 +36,9 @@ df <- df %>%
          TimePoint = factor(TimePoint),
          TimeWith = factor(TimeWith)) 
     # rename("Sad" = `sad`, "Stressed" = `stressed`, "Anxious" = `anxious`, "Supported" = `supported`, "Happy" = `happy`, "Angry" = `angry`, "Scared" = `scared`, "Calm" =  `calm`, "Confident" = `confident`, "Lonely" = `lonely`, "Rejected" = `rejected`, "Included" = `included`)
+
+#could use mutate_at to save some effort here & below
+#df  <- df %>% mutate_at(c("participant_id", "device_id","TimePoint","TimeWith"), factor)
 
 df_l <- df_l %>% 
   mutate(participant_id = factor(participant_id),
@@ -77,24 +82,30 @@ df_bub <- df_bub %>%
 #   unique()
 
 ggplot(df_bub, 
-       aes(x = TimeWith, y = name, size = mean)) +
+       aes(x = TimeWith, y = name, size = mean)) + 
   geom_point(aes(fill = name,
                  color = name),
              shape = 21) + #, show.legend = F) +
     scale_fill_OkabeIto() +
     scale_color_OkabeIto() +
-  theme_minimal() +
+  theme_minimal(base_size = 15) +
   theme(legend.position = "none",
         panel.grid.major.x = element_blank(),
         panel.grid.major.y = element_blank(),
         plot.title = element_text(size=10, hjust=0)) +
-  scale_size_continuous(range = c(1, 25)) +
+  scale_size_continuous(range = c(1, 30)) + #I didn't know you could change the size scale- this is very useful thank you !! I bumped it up to 30 because I think it makes it look even more different from each other without them overlapping
   geom_text(aes(label = round(mean,0)), size = 4) +
-  labs(title = "Severity of Emotion After Spending Time Alone or With Certain People",
-       x = "Time Spent With",
+  labs(title = "Severity of Emotion After Spending Time Alone or With Certain People", # Maybe bold this title or make it a bit larger? 
+       x = "Time Spent With", # I actually think you could probably omit this label too
        y = " ") +
   scale_x_discrete(labels = c('Alone','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
   scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
+
+# This is such a cool way of visualizing the data that I hadn't thought of! My favorite part of this is the way the colors are the same for each emotion and how they get bigger when the emotion is more severe. I found myself looking at this two ways - left to right and then up and down and both felt like meaningful comparisons. This is really intuitive, especially for the partner category, where it's clear there is an absence of sadness (you can barely see the dot!) and a lot of happiness when one spends time with their partner
+
+# I love this plot as is but one thing I wish it could do was more easily is tell me which group makes people happiest, saddest, most anxious, etc. It takes a lot of searching to get this information as is. It looks like it is sorting for happy and partner but not for any other groups. Figuring out how to label the points would be logistically difficult (and would probably make it look less attractive) but maybe you can somehow make the "alone" column look differently so that it is clear it is a reference group, e.g., it's an interesting observation that being with a partner/friends seems to reduce stress compared to being alone, but being with a co-worker/ family seems to increase stress compared to being alone. Or... you could label each dot with something like "+10" or "-4" to show the difference between the dot and the control group 
+
+
 ```
 
 ### Chart B
@@ -122,7 +133,7 @@ ggplot(df_bub,
   theme(legend.position = "none",
         panel.grid.major.x = element_blank(),
         panel.grid.major.y = element_blank(),
-        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), # Loved that you put these at an angle here.. looks fantastic 
         plot.title = element_text(size=10, hjust=1)) +
   scale_size_continuous(range = c(1, 15)) +
   geom_text(aes(label = round(mean_scared,0)), size = 4) +
@@ -131,6 +142,8 @@ ggplot(df_bub,
        y = "") +
   scale_x_discrete(labels = c('Alone','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
   scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
+
+# One thing that you could do for a final draft is use gganimate instead of facet wrapping. This would be really nice because you could see the dots shrink or grow for the anxiety/ non-anxiety conditions. It's a little difficult to keep moving your eyes back and forth to compare, so gganimate would allow you to just stare and watch the dots change 
 ```
 
 Page 2 {data-orientation=columns}
@@ -164,8 +177,8 @@ sad_by_dep <- ggplot(df_line, mapping = aes(as.numeric(TimePoint), mean_sad_mfq)
        y = "Sadness Severity",
        title = "Average Severity of Sadness Between Depressed and Non-Depressed Adolescents Over Time") +
   scale_color_OkabeIto() +
-  annotate("text", label = "Not Depressed at Baseline", x = 36.5, y = 12, color = "orange") +
-  annotate("text", label = "Depressed at Baseline", x = 44, y = 45, color = "turquoise") +
+  annotate("text", label = "Not Depressed at Baseline", x = 36.5, y = 5, color = "#de993a") +
+  annotate("text", label = "Depressed at Baseline", x = 44, y = 40, color = "#49b3d1") + # There are a bunch of ways to match colors exactly.. I use https://imagecolorpicker.com/ which lets you download a screen shot of the graph and gives you the hex codes 
   theme_minimal() +
   theme(legend.position = "none",
         #panel.grid.major.x = element_blank(),
@@ -173,5 +186,10 @@ sad_by_dep <- ggplot(df_line, mapping = aes(as.numeric(TimePoint), mean_sad_mfq)
   scale_x_continuous(breaks = seq(0, 60, by = 10))
 
 ggplotly(sad_by_dep)
+
+# I love that this is interactive and that you directly labeled the lines. I added the labels a little closer to the lines and matched the colors because at first glance I didn't realize you were labeling the lines (it looked like you were labeling maybe a threshold?)
+
+# I'm a little confused about the "time point" variable here - maybe give the units? Is it years or months? At a certain point, why does everyone in the sample no longer show any sadness? And what is happening at ~20 when the orange graph spikes up? Did they give any explanation for that anomaly in the data? If they did, maybe you could label what is happening there?
+
 ```
 
