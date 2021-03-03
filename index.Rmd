@@ -17,8 +17,9 @@ library(colorblindr)
 library(lubridate)
 library(plotly)
 ```
-
-Page 1 {data-orientation=rows}
+Data Source {.sidebar}
+==================================
+This is a brief summary of the data.
 ===============================
 
 ### Chart A
