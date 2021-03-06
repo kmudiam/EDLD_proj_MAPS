@@ -18,13 +18,23 @@ library(ggplot2)
 library(colorblindr)
 library(lubridate)
 library(plotly)
+library(gganimate)
+library(ggtext)
 ```
-Data Source {.sidebar}
-==================================
-This is a brief summary of the data.
-===============================
 
-### Chart A
+Data Source {.sidebar}
+==========
+**Data Source**
+Here is some information regarding the source of the data. Here's a cool little demographic table as well. 
+
+
+Who makes teens happy? sad? anxious?
+===============================
+Column {.tabset data-width=700}
+-----------------------------------------------------------------------
+
+
+### Version 1
 
 ```{r}
 #here::here()
@@ -89,27 +99,91 @@ ggplot(df_bub,
              shape = 21) + #, show.legend = F) +
     scale_fill_OkabeIto() +
     scale_color_OkabeIto() +
-  theme_minimal(base_size = 15) +
+  theme_minimal() +
   theme(legend.position = "none",
         panel.grid.major.x = element_blank(),
         panel.grid.major.y = element_blank(),
         plot.title = element_text(size=10, hjust=0)) +
-  scale_size_continuous(range = c(1, 30)) + #I didn't know you could change the size scale- this is very useful thank you !! I bumped it up to 30 because I think it makes it look even more different from each other without them overlapping
+  scale_size_continuous(range = c(1, 25)) + 
   geom_text(aes(label = round(mean,0)), size = 4) +
-  labs(title = "Severity of Emotion After Spending Time Alone or With Certain People", # Maybe bold this title or make it a bit larger? 
-       x = "Time Spent With", # I actually think you could probably omit this label too
+  labs(title = "Severity of Emotion After Spending Time Alone or With Certain People",
+       x = "Time Spent With", 
        y = " ") +
   scale_x_discrete(labels = c('Alone','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
   scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
-
-# This is such a cool way of visualizing the data that I hadn't thought of! My favorite part of this is the way the colors are the same for each emotion and how they get bigger when the emotion is more severe. I found myself looking at this two ways - left to right and then up and down and both felt like meaningful comparisons. This is really intuitive, especially for the partner category, where it's clear there is an absence of sadness (you can barely see the dot!) and a lot of happiness when one spends time with their partner
-
-# I love this plot as is but one thing I wish it could do was more easily is tell me which group makes people happiest, saddest, most anxious, etc. It takes a lot of searching to get this information as is. It looks like it is sorting for happy and partner but not for any other groups. Figuring out how to label the points would be logistically difficult (and would probably make it look less attractive) but maybe you can somehow make the "alone" column look differently so that it is clear it is a reference group, e.g., it's an interesting observation that being with a partner/friends seems to reduce stress compared to being alone, but being with a co-worker/ family seems to increase stress compared to being alone. Or... you could label each dot with something like "+10" or "-4" to show the difference between the dot and the control group 
-
-
 ```
 
-### Chart B
+
+### Version 2
+
+```{r}
+ggplot(df_bub, 
+       aes(x = TimeWith, y = name, size = mean)) + 
+  geom_point(aes(fill = name,
+                 color = name),
+             shape = 21) + #, show.legend = F) +
+    scale_fill_OkabeIto() +
+    scale_color_OkabeIto() +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+      #  axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), 
+        plot.title = element_text(face= "bold", hjust=0)) +
+  scale_size_continuous(range = c(1, 25)) +
+  geom_text(aes(label = round(mean,0)), size = 4) +
+  labs(title = "Severity of Emotion After Spending Time With...",
+       x = " ",
+       y = " ") +
+  scale_x_discrete(labels = c('Self','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
+  scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
+
+
+#change font size 
+#change the ascending order of something?
+#make different groups, different colors? self = gray, colleagues/acquaintances = blueish, close relationships = red 
+```
+
+### Version 3
+```{r}
+# palette_OkabeIto
+accent_OkabeIto <- palette_OkabeIto[c(5, 2, 6, 1, 4, 3, 7)]
+accent_OkabeIto[1:7] <- desaturate(lighten(accent_OkabeIto[1:7]), .3)
+# #accent_OkabeIto[5:7] <- darken(accent_OkabeIto[5:7], .3))
+# gg_color_swatches(7) +
+# scale_fill_manual(values = accent_OkabeIto)
+
+
+ggplot(df_bub, 
+       aes(x = TimeWith, y = name, size = mean)) + 
+  geom_point(aes(fill = name,
+                 color = name),
+             shape = 21) + #, show.legend = F) +
+  # geom_point(data = filter(df_bub, TimeWith == "alone"),
+  #            fill = "blue") +
+  scale_fill_manual(values = accent_OkabeIto) +
+  scale_color_manual(values = accent_OkabeIto) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+      #  axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), 
+        plot.title = element_text(hjust= -.5)) +
+  scale_size_continuous(range = c(1, 25)) +
+  geom_text(aes(label = round(mean,0)), size = 4) +
+  labs(title = "Severity of Emotion After Spending Time With...",
+       x = " ",
+       y = " ") +
+  scale_x_discrete(labels = c('Self','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
+  scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
+```
+
+What if they're already anxious to start with? 
+===============================
+Column {.tabset data-width=700}
+-----------------------------------------------------------------------
+
+### Version 1
 
 ```{r}
 df_bub <- df_bub %>% 
@@ -120,6 +194,9 @@ df_bub <- df_bub %>%
 anxsev.labs <- c("No Anxiety at Baseline", "Anxiety at Baseline")
 names(anxsev.labs) <- c("0", "1")
 
+# df_bub %>% 
+#   group_by(scared_sev) %>% 
+#   count()
 
 ggplot(df_bub, 
        aes(x = TimeWith, y = name, size = mean_scared)) +
@@ -134,7 +211,7 @@ ggplot(df_bub,
   theme(legend.position = "none",
         panel.grid.major.x = element_blank(),
         panel.grid.major.y = element_blank(),
-        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), # Loved that you put these at an angle here.. looks fantastic 
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), 
         plot.title = element_text(size=10, hjust=1)) +
   scale_size_continuous(range = c(1, 15)) +
   geom_text(aes(label = round(mean_scared,0)), size = 4) +
@@ -143,15 +220,87 @@ ggplot(df_bub,
        y = "") +
   scale_x_discrete(labels = c('Alone','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
   scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
-
-# One thing that you could do for a final draft is use gganimate instead of facet wrapping. This would be really nice because you could see the dots shrink or grow for the anxiety/ non-anxiety conditions. It's a little difficult to keep moving your eyes back and forth to compare, so gganimate would allow you to just stare and watch the dots change 
 ```
 
-Page 2 {data-orientation=columns}
+### Version 2
+
+```{r}
+df_bub <- df_bub %>% 
+  group_by(name, TimeWith, scared_sev) %>% 
+  mutate(mean_scared = mean(value, na.rm = T)) %>% 
+  drop_na(scared_sev)
+
+anxsev.labs <- c("No Anxiety at Baseline", "Anxiety at Baseline")
+#anxsev.labs_bold <- c("<span style = 'color: #C55644'>**No Anxiety** </span> at Baseline", "<span style = 'color: #C55644'>**Anxiety**</span> at Baseline")
+
+names(anxsev.labs) <- c("0", "1")
+#names(anxsev.labs_bold) <- c("0", "1")
+
+p <- ggplot(df_bub, 
+       aes(x = TimeWith, y = name, size = mean_scared)) +
+  geom_point(aes(fill = name,
+                 color = name),
+             shape = 21) + 
+  facet_wrap(~scared_sev,
+             labeller = labeller(scared_sev = anxsev.labs)) +
+  scale_fill_manual(values = accent_OkabeIto) +
+  scale_color_manual(values = accent_OkabeIto) +
+  theme_minimal() +
+  theme(legend.position = "none",
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, color = "gray8"),
+        plot.title = element_text(size=10),
+        plot.subtitle = element_text(size = 10),
+        axis.text.y = element_text(color = "gray8")) +
+  scale_size_continuous(range = c(1, 13)) +
+  geom_text(aes(label = round(mean_scared,0)), size = 3) +
+  labs(title = "Severity of <span style = >**Emotion Among Anxious and Non-Anxious Adolescents**</span>",
+       subtitle = "After Spending Time With...",
+       x = "",
+       y = "") +
+  scale_x_discrete(labels = c('Self','Co-Students','Co-Workers', "Family", "Friends", "Partner")) +
+  scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
+
+p + theme(panel.spacing.x = unit(2, "lines"),
+          plot.title = element_markdown(),
+          plot.subtitle = element_markdown())
+```
+
+Column {.tabset data-width=150}
+-----------------------------------------------------------------------
+
+### Anxiety at Baseline
+
+```{r}
+# df_bub %>% 
+#   group_by(scared_sev) %>% 
+#   unique() %>% 
+#   count()
+
+anx_table <- df_bub %>%
+  group_by(scared_sev) %>%
+  summarise(n_distinct(participant_id))
+anx_table <- as.data.frame(anx_table)
+anx_table <- anx_table %>% 
+  rename("Clinical Levels of Anxiety at Baseline" = scared_sev, "N" = `n_distinct(participant_id)`) %>% 
+  mutate(`Clinical Levels of Anxiety at Baseline` = as.numeric(`Clinical Levels of Anxiety at Baseline`),
+         N = as.numeric(N)) %>% 
+mutate(`Clinical Levels of Anxiety at Baseline` = if_else(`Clinical Levels of Anxiety at Baseline`== "1", "Absent", "Present"))
+
+knitr::kable(anx_table)
+```
+
+
+
+
+
+Changes in Mood Over Time {data-orientation=columns}
 ===============================
+Column {.tabset data-width=700}
+-----------------------------------------------------------------------
 
-### Chart C
-
+### Version 1
 ```{r}
 # df %>% 
 # select(TimePoint) %>% 
@@ -167,10 +316,29 @@ df_line <- df %>%
 # df_line %>% 
 #   group_by(mfq_sev,TimePoint) %>% 
 #   count() #After a certain point, there's only one data point for later timepoints. Should I stop once n gets below 5?
-# 
 
 
+sad_by_dep <- ggplot(df_line, mapping = aes(as.numeric(TimePoint), mean_sad_mfq)) +
+  geom_line(aes(color = mfq_sev)) +
+  geom_point(shape=21, aes(color=mfq_sev, fill = mfq_sev), size=2) +
+  labs(x = "Time Point",
+       y = "Sadness Severity",
+       title = "Average Severity of Sadness Between Depressed and Non-Depressed Adolescents Over Time") +
+  scale_color_OkabeIto() +
+  annotate("text", label = "Not Depressed at Baseline", x = 36.5, y = 12, color = "orange") +
+  annotate("text", label = "Depressed at Baseline", x = 44, y = 45, color = "turquoise") + # There are a bunch of ways to match colors exactly.. I use https://imagecolorpicker.com/ which lets you download a screen shot of the graph and gives you the hex codes 
+  theme_minimal() +
+  theme(legend.position = "none",
+        #panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank()) + 
+  scale_x_continuous(breaks = seq(0, 60, by = 10))
 
+ggplotly(sad_by_dep)
+```
+
+### Version 2
+
+```{r}
 sad_by_dep <- ggplot(df_line, mapping = aes(as.numeric(TimePoint), mean_sad_mfq)) +
   geom_line(aes(color = mfq_sev)) +
   geom_point(shape=21, aes(color=mfq_sev, fill = mfq_sev), size=2) +
@@ -193,4 +361,3 @@ ggplotly(sad_by_dep)
 # I'm a little confused about the "time point" variable here - maybe give the units? Is it years or months? At a certain point, why does everyone in the sample no longer show any sadness? And what is happening at ~20 when the orange graph spikes up? Did they give any explanation for that anomaly in the data? If they did, maybe you could label what is happening there?
 
 ```
-
