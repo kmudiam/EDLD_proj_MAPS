@@ -22,13 +22,22 @@ library(gganimate)
 library(ggtext)
 ```
 
-Data Source {.sidebar}
+Project Info {.sidebar}
 ==========
-**Data Source**
-Here is some information regarding the source of the data. Here's a cool little demographic table as well. 
+**Project Information**
 
+One aim of the project is to monitor mood regularly to identify real-time predictive factors of self-harm and/or suicidal behaviors among high-risk adolescents (13-18 years). 
 
-Who makes teens happy? sad? anxious?
+I'm interested in how mood in this population may change in relation to interpersonal interactions. A subset of the sample *(N = 62)* was used for this data visualization project. Although we can't make causal claims about the role of interpersonal interactions on these adolescents' moods, these plots do help illustrate how spending time with certain people *may* be particularly beneficial for high-risk adolescents. This may vary on baseline levels of anxiety. 
+
+Participants completed periodic EMAs for 1 week. 4 times on weekdays, 7 times on weekends. 
+
+**“How X do you feel right now?"**
+**"Over the last few hours, who have you spent the most time with?"**
+
+*Responses are on a 1-100 scale.*
+
+Overall mood may be best after high-risk teens spend time with a partner.
 ===============================
 Column {.tabset data-width=700}
 -----------------------------------------------------------------------
@@ -178,7 +187,21 @@ ggplot(df_bub,
   scale_y_discrete(labels = c("Sad", "Stressed", "Anxious", "Supported", "Happy"))
 ```
 
-What if they're already anxious to start with? 
+Column {.tabset data-width=150}
+-----------------------------------------------------------------------
+
+### Version History 
+**Version 1** presents the data accurately and uses a color-blind friendly palette, however the labels and axes are a bit crowded and content-heavy. In order to make the title more clear and grab the attention of the viewer, I shortened and bolded the title in **Version 2**. The bold font felt a bit distracting from the other labels, however, so in **Version 3** I reverted to the previous font style. I also used the color scheme to represent the emotions in a way that feels more intuitive. For example, *yellow* is generally viewed as a positive, cheery color so *happy* was represented by yellow, whereas *sadness* is represented by *blue* given that "feeling blue" indicates feeling low/sad. I did this by desaturating the Okabe Ito color scheme so the scheme would still be color-blind friendly. 
+
+### Interpretation
+The sizes of the bubbles plotted demonstrates the average severity level of the emotion across participants. The numeric labels on the bubbles also display the severity level. It seems that positive emotions (happy, supported) are greater when the adolescents have spent time with their partner in comparison to other people (i.e., classmates, friends).
+
+
+```{r}
+
+```
+
+That pattern might be especially evident for high-risk teens who experience clinical anxiety.
 ===============================
 Column {.tabset data-width=700}
 -----------------------------------------------------------------------
@@ -291,11 +314,13 @@ mutate(`Clinical Levels of Anxiety at Baseline` = if_else(`Clinical Levels of An
 knitr::kable(anx_table)
 ```
 
+### Version History 
+**Version 1** presents the data accurately and uses a color-blind friendly palette, however the 2 plots are fairly close together so it's a little bit hard to process them separately and compare across the groups. Again, the title was a bit word heavy, so in **Version 2**, I shortened and bolded parts of the title to clearly highlight that two populations are being compared. This version also used the same color scheme as the previous set of plots. 
 
+### Interpretation
+Among high-risk adolescents with clinical levels of anxiety, their mood after spending time with their partner seems to be generally better than those without clinical levels of anxiety. This would be interesting to look into further, especially because the severity of anxiety seems particularly low after anxious adolescents spend time with their partners. There may be a protective factor or safety behavior worth looking into. Again, the numeric labels on the bubbles also display the severity level. It seems that positive emotions (happy, supported) are greater when the adolescents have spent time with their partner in comparison to other people (i.e., classmates, friends).
 
-
-
-Changes in Mood Over Time {data-orientation=columns}
+Levels of sadness fluctuate over time among teens with and without depression  {data-orientation=columns}
 ===============================
 Column {.tabset data-width=700}
 -----------------------------------------------------------------------
@@ -361,3 +386,97 @@ ggplotly(sad_by_dep)
 # I'm a little confused about the "time point" variable here - maybe give the units? Is it years or months? At a certain point, why does everyone in the sample no longer show any sadness? And what is happening at ~20 when the orange graph spikes up? Did they give any explanation for that anomaly in the data? If they did, maybe you could label what is happening there?
 
 ```
+
+
+### Version 3
+
+```{r}
+df_tp <- import("data/data_tp.csv") %>% 
+  filter(n_day_enrollment %in% c("1", "2", "3", "4", "5", "6")) %>% 
+  select(-V1) %>% 
+  mutate(timep_update = 1,
+         id_participant = factor(id_participant)) %>% 
+  rename(participant_id = id_participant)
+
+df_tp <- df_tp %>% 
+  group_by(participant_id) %>%
+  mutate(timepoint = cumsum(timep_update)) %>% 
+  select(-timep_update)
+  
+x <- df_tp %>% 
+  group_by(timepoint, sad) %>% 
+  count() %>% 
+  na.omit() %>% 
+  group_by(timepoint) %>% 
+  count()  #just seeing how many data points I have at each timepoint. It varies quite a bit 
+
+df_mfq_sev <- df %>% 
+  select(participant_id, mfq_sev) %>% 
+  unique() %>% 
+  na.omit()
+
+df_tp <- left_join(df_tp, df_mfq_sev, by = "participant_id")
+df_tp <- df_tp %>% 
+  group_by(timepoint, mfq_sev) %>% 
+  mutate(mean_sad_mfq = mean(sad, na.rm = T))  %>% 
+  drop_na(mfq_sev)
+
+# 
+# df_tp %>% 
+#   group_by(mfq_sev, participant_id) %>% 
+#   count()
+
+sad_by_dep_3 <- ggplot(df_tp, mapping = aes(as.numeric(timepoint), mean_sad_mfq)) +
+  geom_line(aes(color = mfq_sev)) +
+  geom_point(shape=21, aes(color=mfq_sev, fill = mfq_sev), size=2) +
+  labs(x = "Time Point",
+       y = "Sadness Severity",
+       title = "Average Severity of Sadness Between Depressed and Non-Depressed Adolescents Over Time") +
+  scale_color_OkabeIto() +
+  annotate("text", label = "Not Depressed at Baseline", x = 35, y = 5, color = "#de993a") +
+  annotate("text", label = "Depressed at Baseline", x = 40, y = 52, color = "#49b3d1") + # There are a bunch of ways to match colors exactly.. I use https://imagecolorpicker.com/ which lets you download a screen shot of the graph and gives you the hex codes 
+  theme_minimal() +
+  theme(legend.position = "none",
+        #panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_blank()) + 
+  scale_x_continuous(breaks = seq(0, 60, by = 10)) #there are certain timepoints without datapoints
+
+ggplotly(sad_by_dep_3)
+```
+
+Column {.tabset data-width=150}
+-----------------------------------------------------------------------
+
+### N at each Timepoint by Depression Status
+
+```{r}
+# df_bub %>% 
+#   group_by(scared_sev) %>% 
+#   unique() %>% 
+#   count()
+
+dep_tp <- df_tp %>% 
+  group_by(timepoint, mfq_sev, sad) %>% 
+  na.omit() %>% 
+  count() %>% 
+  ungroup %>% 
+  select(-sad)
+
+dep_tp <- dep_tp %>% 
+  pivot_wider(id_cols = timepoint,
+              names_from = mfq_sev,
+              values_from = n,
+              values_fn = sum)
+#just seeing how many data points I have at each timepoint. It varies quite a bit 
+dep_tp <- as.data.frame(dep_tp) 
+dep_tp <- dep_tp %>% 
+  rename(Timepoint = timepoint, `Depression at Baseline` = "1", `No Depression at Baseline` = "0")
+
+knitr::kable(dep_tp)
+```
+
+### Version History 
+**Version 1** and **Version 2** presents the data with a data set that was not fully cleaned. Particularly, the timepoints had not been correctly labeled. This has been fixed and the correct dataset was used in **Version 3**. The table (relevant to Version 3) displaying the number of data points for each timepoint between groups. It demonstrates that there are a few timepoints without data. This explains the gaps in the line plot. The color schemes are again color-blind friendly, using the Okabe Ito package.
+
+### Interpretation
+These plots are not particularly enlightening in understanding predictive factors or sadness, however, we do see that there is variability in severity of sadness over time. There are also instances where adolescents who were not depressed at baseline, report levels of sadness that surpass the levels of adolescents who were depressed at baseline. 
